@@ -25,6 +25,10 @@ const run = async () => {
     const usersCollection = client.db("chatApp").collection("users");
     app.post("/api/register", async (req, res) => {
       const user = req.body;
+      const { fullName, email, password } = user;
+      if (!fullName || !email || !password) {
+        res.status(400).send("Please fill all required fields");
+      }
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
