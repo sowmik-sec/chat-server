@@ -25,6 +25,9 @@ const client = new MongoClient(uri, {
 const run = async () => {
   try {
     const usersCollection = client.db("chatApp").collection("users");
+    const conversationCollection = client
+      .db("chatApp")
+      .collection("conversation");
     app.post("/api/register", async (req, res) => {
       const user = req.body;
       const { fullName, email, password } = user;
@@ -76,17 +79,21 @@ const run = async () => {
                     $set: { token },
                   }
                 );
-                res
-                  .status(200)
-                  .json({
-                    user: { email: user.email, fullName: user.fullName },
-                    token: user.token,
-                  });
+                res.status(200).json({
+                  user: { email: user.email, fullName: user.fullName },
+                  token: user.token,
+                });
               }
             );
           }
         }
       }
+    });
+    app.post("/api/conversation", async (req, res) => {
+      const { senderId, receiverId } = req.body;
+      const newConversation = { members: [senderId, receiverId] };
+      const result = await conversationCollection.insertOne(newConversation);
+      res.send(result);
     });
   } finally {
   }
