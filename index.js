@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const jwt = require("jsonwebtoken");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
@@ -42,6 +43,48 @@ const run = async () => {
               res.send(result);
             });
           });
+        }
+      }
+    });
+    app.post("/api/login", async (req, res) => {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        res.status(400).send("Please fill all required fields");
+      } else {
+        const user = await usersCollection.findOne({ email });
+        if (!user) {
+          res.status(400).send("User email or password is incorrect");
+        } else {
+          const validateUser = await bcrypt.compare(password, user.password);
+          if (!validateUser) {
+            res.status(400).send("User email or password is incorrect");
+          } else {
+            const payload = {
+              userId: user._id,
+              email: user.email,
+            };
+            const JWT_SECRET_KEY =
+              process.env.JWT_SECRET_KEY || "THIS_IS_A_JWT_SECRET_KEY";
+            jwt.sign(
+              payload,
+              JWT_SECRET_KEY,
+              { expiresIn: 84600 * 30 },
+              async (err, token) => {
+                const updatedResult = await usersCollection.updateOne(
+                  { _id: new ObjectId(user._id) },
+                  {
+                    $set: { token },
+                  }
+                );
+                res
+                  .status(200)
+                  .json({
+                    user: { email: user.email, fullName: user.fullName },
+                    token: user.token,
+                  });
+              }
+            );
+          }
         }
       }
     });
