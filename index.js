@@ -95,6 +95,29 @@ const run = async () => {
       const result = await conversationCollection.insertOne(newConversation);
       res.send(result);
     });
+    app.get("/api/conversation/:userId", async (req, res) => {
+      const userId = req.params.userId;
+      const conversations = await conversationCollection
+        .find({
+          members: { $in: [userId] },
+        })
+        .toArray();
+      const conversationUserData = Promise.all(
+        conversations.map(async (conversation) => {
+          const receiverId = conversation.members.find(
+            (member) => member !== userId
+          );
+          const user = await usersCollection.findOne({
+            _id: new ObjectId(receiverId),
+          });
+          return {
+            user: { email: user.email, fullName: user.fullName },
+            conversationId: conversation._id,
+          };
+        })
+      );
+      res.status(200).json(await conversationUserData);
+    });
   } finally {
   }
 };
