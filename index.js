@@ -3,6 +3,7 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const app = express();
 require("dotenv").config();
+const bcrypt = require("bcryptjs");
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -32,10 +33,17 @@ const run = async () => {
         const isAlreadyExist = await usersCollection.findOne({ email });
         if (isAlreadyExist) {
           res.status(400).send("User already exists");
+        } else {
+          const newUser = { fullName, email };
+          bcrypt.genSalt(10, (err, salt) => {
+            bcrypt.hash(password, salt, async (err, hash) => {
+              newUser.password = hash;
+              const result = await usersCollection.insertOne(newUser);
+              res.send(result);
+            });
+          });
         }
       }
-      const result = await usersCollection.insertOne(user);
-      res.send(result);
     });
   } finally {
   }
