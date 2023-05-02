@@ -23,6 +23,11 @@ const client = new MongoClient(uri, {
 const run = async () => {
   try {
     const usersCollection = client.db("chatApp").collection("users");
+    app.post("/api/register", async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
   } finally {
   }
 };
