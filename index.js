@@ -28,6 +28,11 @@ const run = async () => {
       const { fullName, email, password } = user;
       if (!fullName || !email || !password) {
         res.status(400).send("Please fill all required fields");
+      } else {
+        const isAlreadyExist = await usersCollection.findOne({ email });
+        if (isAlreadyExist) {
+          res.status(400).send("User already exists");
+        }
       }
       const result = await usersCollection.insertOne(user);
       res.send(result);
