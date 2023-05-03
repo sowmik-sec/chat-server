@@ -28,6 +28,7 @@ const run = async () => {
     const conversationCollection = client
       .db("chatApp")
       .collection("conversation");
+    const messageCollection = client.db("chatApp").collection("message");
     app.post("/api/register", async (req, res) => {
       const user = req.body;
       const { fullName, email, password } = user;
@@ -117,6 +118,12 @@ const run = async () => {
         })
       );
       res.status(200).json(await conversationUserData);
+    });
+    app.post("/api/message", async (req, res) => {
+      const { conversationId, senderId, message } = req.body;
+      const newMessage = { conversationId, senderId, message };
+      const result = await messageCollection.insertOne(newMessage);
+      res.status(200).send(result);
     });
   } finally {
   }
