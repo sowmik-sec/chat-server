@@ -144,6 +144,18 @@ const run = async () => {
       );
       res.status(200).json(await messageUserData);
     });
+    app.get("/api/users", async (req, res) => {
+      const users = await usersCollection.find({}).toArray();
+      const usersData = Promise.all(
+        users.map(async (user) => {
+          return {
+            user: { fullName: user.fullName, email: user.email },
+            userId: user._id,
+          };
+        })
+      );
+      res.status(200).send(await usersData);
+    });
   } finally {
   }
 };
