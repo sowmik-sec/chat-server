@@ -125,6 +125,25 @@ const run = async () => {
       const result = await messageCollection.insertOne(newMessage);
       res.status(200).send(result);
     });
+    app.get("/api/message/:conversationId", async (req, res) => {
+      const conversationId = req.params.conversationId;
+      const messages = await messageCollection
+        .find({ conversationId })
+        .toArray();
+      const messageUserData = Promise.all(
+        messages.map(async (message) => {
+          const user = await usersCollection.findOne({
+            _id: new ObjectId(message.senderId),
+          });
+          console.log(user);
+          return {
+            user: { email: user.email, fullName: user.fullName },
+            message: message.message,
+          };
+        })
+      );
+      res.status(200).json(await messageUserData);
+    });
   } finally {
   }
 };
