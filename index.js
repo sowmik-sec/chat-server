@@ -120,13 +120,29 @@ const run = async () => {
       res.status(200).json(await conversationUserData);
     });
     app.post("/api/message", async (req, res) => {
-      const { conversationId, senderId, message } = req.body;
+      const { conversationId, senderId, message, receiverId } = req.body;
+      if (!senderId || !message || !receiverId)
+        return res.status(400).send("Please fill all required fields");
+      if (!conversationId) {
+        const newConversation = { members: [senderId, receiverId] };
+        const conversation = await conversationCollection.insertOne(
+          newConversation
+        );
+        const newMessage = {
+          conversationId: conversation.insertedId.toString(),
+          senderId,
+          message,
+        };
+        const result = await messageCollection.insertOne(newMessage);
+        return res.status(200).send("Message sent successfully");
+      }
       const newMessage = { conversationId, senderId, message };
       const result = await messageCollection.insertOne(newMessage);
       res.status(200).send(result);
     });
     app.get("/api/message/:conversationId", async (req, res) => {
       const conversationId = req.params.conversationId;
+      if (!conversationId) return res.status(200).send([]);
       const messages = await messageCollection
         .find({ conversationId })
         .toArray();
@@ -135,7 +151,6 @@ const run = async () => {
           const user = await usersCollection.findOne({
             _id: new ObjectId(message.senderId),
           });
-          console.log(user);
           return {
             user: { email: user.email, fullName: user.fullName },
             message: message.message,
