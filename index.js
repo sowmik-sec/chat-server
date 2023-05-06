@@ -118,7 +118,11 @@ const run = async () => {
             _id: new ObjectId(receiverId),
           });
           return {
-            user: { email: user.email, fullName: user.fullName },
+            user: {
+              receiverId: user._id,
+              email: user.email,
+              fullName: user.fullName,
+            },
             conversationId: conversation._id,
           };
         })
