@@ -44,7 +44,9 @@ const run = async () => {
             bcrypt.hash(password, salt, async (err, hash) => {
               newUser.password = hash;
               const result = await usersCollection.insertOne(newUser);
-              res.send(result);
+              res.status(200).json({
+                user: { email: user.email, fullName: user.fullName },
+              });
             });
           });
         }
