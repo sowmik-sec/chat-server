@@ -83,7 +83,11 @@ const run = async () => {
                   }
                 );
                 res.status(200).json({
-                  user: { email: user.email, fullName: user.fullName },
+                  user: {
+                    id: user._id,
+                    email: user.email,
+                    fullName: user.fullName,
+                  },
                   token: token,
                 });
               }
@@ -98,7 +102,7 @@ const run = async () => {
       const result = await conversationCollection.insertOne(newConversation);
       res.send(result);
     });
-    app.get("/api/conversation/:userId", async (req, res) => {
+    app.get("/api/conversations/:userId", async (req, res) => {
       const userId = req.params.userId;
       const conversations = await conversationCollection
         .find({
