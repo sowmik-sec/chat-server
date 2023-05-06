@@ -82,7 +82,7 @@ const run = async () => {
                 );
                 res.status(200).json({
                   user: { email: user.email, fullName: user.fullName },
-                  token: user.token,
+                  token: token,
                 });
               }
             );
