@@ -133,7 +133,7 @@ const run = async () => {
       const { conversationId, senderId, message, receiverId } = req.body;
       if (!senderId || !message || !receiverId)
         return res.status(400).send("Please fill all required fields");
-      if (!conversationId) {
+      if (conversationId === "new") {
         const newConversation = { members: [senderId, receiverId] };
         const conversation = await conversationCollection.insertOne(
           newConversation
@@ -151,31 +151,60 @@ const run = async () => {
       res.status(200).send(result);
     });
     app.get("/api/message/:conversationId", async (req, res) => {
+      const checkMessages = async (conversationId) => {
+        const messages = await messageCollection
+          .find({ conversationId })
+          .toArray();
+        const messageUserData = Promise.all(
+          messages.map(async (message) => {
+            const user = await usersCollection.findOne({
+              _id: new ObjectId(message.senderId),
+            });
+            return {
+              user: {
+                id: user._id,
+                email: user.email,
+                fullName: user.fullName,
+              },
+              message: message.message,
+            };
+          })
+        );
+        res.status(200).json(await messageUserData);
+      };
       const conversationId = req.params.conversationId;
-      if (!conversationId) return res.status(200).send([]);
-      const messages = await messageCollection
-        .find({ conversationId })
-        .toArray();
-      const messageUserData = Promise.all(
-        messages.map(async (message) => {
-          const user = await usersCollection.findOne({
-            _id: new ObjectId(message.senderId),
-          });
-          return {
-            user: { id: user._id, email: user.email, fullName: user.fullName },
-            message: message.message,
-          };
-        })
-      );
-      res.status(200).json(await messageUserData);
+      if (conversationId === "new") {
+        const checkConversation = await conversationCollection
+          .find({
+            members: {
+              $all: [req.query.senderId, req.query.receiverId],
+              $size: 2,
+            },
+          })
+          .toArray();
+        console.log("checkConversation = ", checkConversation);
+        if (checkConversation.length > 0) {
+          checkMessages(checkConversation[0]._id.toString());
+        } else {
+          return res.status(200).send([]);
+        }
+      } else {
+        checkMessages(conversationId);
+      }
     });
-    app.get("/api/users", async (req, res) => {
-      const users = await usersCollection.find({}).toArray();
+    app.get("/api/users/:userId", async (req, res) => {
+      const userId = req.params.userId;
+      const users = await usersCollection
+        .find({ _id: { $ne: userId } })
+        .toArray();
       const usersData = Promise.all(
         users.map(async (user) => {
           return {
-            user: { fullName: user.fullName, email: user.email },
-            userId: user._id,
+            user: {
+              fullName: user.fullName,
+              email: user.email,
+              receiverId: user._id,
+            },
           };
         })
       );
