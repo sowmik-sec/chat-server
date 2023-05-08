@@ -68,6 +68,18 @@ const run = async () => {
                   email: user.email,
                 },
               });
+          } else {
+            io.to(sender.socketId).emit("getMessage", {
+              senderId,
+              message,
+              conversationId,
+              receiverId,
+              user: {
+                id: user._id,
+                fullName: user.fullName,
+                email: user.email,
+              },
+            });
           }
         }
       );
