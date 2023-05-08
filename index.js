@@ -6,6 +6,11 @@ const app = express();
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const port = process.env.PORT || 5000;
+const io = require("socket.io")(5050, {
+  cors: {
+    origin: "http://localhost:3000",
+  },
+});
 
 // middleware
 app.use(cors());
@@ -29,6 +34,49 @@ const run = async () => {
       .db("chatApp")
       .collection("conversation");
     const messageCollection = client.db("chatApp").collection("message");
+    // socket.io
+    let users = [];
+    io.on("connection", (socket) => {
+      console.log("User connected", socket.id);
+      socket.on("addUser", (userId) => {
+        const isUserExist = users.find((user) => user.userId === userId);
+        if (!isUserExist) {
+          const user = { userId, socketId: socket.id };
+          users.push(user);
+          io.emit("getUsers", users);
+        }
+      });
+      socket.on(
+        "sendMessage",
+        async ({ senderId, receiverId, message, conversationId }) => {
+          const receiver = users.find((user) => user.userId === receiverId);
+          const sender = users.find((user) => user.userId === senderId);
+          const user = await usersCollection.findOne({
+            _id: new ObjectId(senderId),
+          });
+          if (receiver) {
+            io.to(receiver.socketId)
+              .to(sender.socketId)
+              .emit("getMessage", {
+                senderId,
+                message,
+                conversationId,
+                receiverId,
+                user: {
+                  id: user._id,
+                  fullName: user.fullName,
+                  email: user.email,
+                },
+              });
+          }
+        }
+      );
+      socket.on("disconnect", () => {
+        users = users.filter((user) => user.socketId !== socket.id);
+        io.emit("getUsers", users);
+      });
+      // io.emit('getUsers', socket.userId);
+    });
     app.post("/api/register", async (req, res) => {
       const user = req.body;
       const { fullName, email, password } = user;
